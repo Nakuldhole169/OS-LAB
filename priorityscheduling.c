@@ -1,74 +1,95 @@
 cs169
 
-#include <stdio.h>
+  #include<stdio.h>
+#include<stdlib.h>
 
-#define MAX_PROC 10
-
-struct Proc {
-    int pid, at, bt, pri, ct, tat, wt, rt, exec;
-};
-
-void prio_non_preemptive(struct Proc proc[], int n) {
-    int curr_time = 0, total_ct = 0;
-
-    while (1) {
-        int high_prio = 9999, high_prio_idx = -1;
-
-       
-        for (int i = 0; i < n; i++) {
-            if (proc[i].at <= curr_time && proc[i].exec == 0) {
-                if (proc[i].pri < high_prio) {
-                    high_prio = proc[i].pri;
-                    high_prio_idx = i;
-                }
+void swap(int *a,int *b){
+    *a = *a + *b;
+    *b = *a - *b;
+    *a = *a - *b;
+}
+void sort(int *pid, int *at, int *bt, int *prior, int n){
+    for(int i=0;i<n;i++){
+        for(int j=0;j<n;j++){
+            if(at[i]<at[j]){
+                swap(&at[i],&at[j]);
+                swap(&bt[i],&bt[j]);
+                swap(&pid[i],&pid[j]);
+                swap(&prior[i],&prior[j]);
             }
         }
-
-       
-        if (high_prio_idx == -1) {
-            break;
-        }
-
-        
-        proc[high_prio_idx].ct = curr_time + proc[high_prio_idx].bt;
-        proc[high_prio_idx].tat = proc[high_prio_idx].ct - proc[high_prio_idx].at;
-        proc[high_prio_idx].wt = proc[high_prio_idx].tat - proc[high_prio_idx].bt;
-        proc[high_prio_idx].rt = curr_time - proc[high_prio_idx].at;
-        if (proc[high_prio_idx].wt < 0)
-            proc[high_prio_idx].wt = 0;
-        proc[high_prio_idx].exec = 1;
-        total_ct = proc[high_prio_idx].ct;
-        curr_time = total_ct;
     }
 }
-
-int main() {
-    int n;
-    struct Proc proc[MAX_PROC];
-
-    printf("Enter the number of processes: ");
-    scanf("%d", &n);
-
-   
-    for (int i = 0; i < n; i++) {
-        proc[i].pid = i + 1;
-        printf("Enter arrival time for process %d: ", i + 1);
-        scanf("%d", &proc[i].at);
-        printf("Enter burst time for process %d: ", i + 1);
-        scanf("%d", &proc[i].bt);
-        printf("Enter priority for process %d: ", i + 1);
-        scanf("%d", &proc[i].pri);
-        proc[i].exec = 0;
+int highest_priority(int *prior, int s, int e){
+    int x = prior[s];
+    int j = s;
+    for(int i=s;i<e;i++){
+        if (prior[i]>x){
+            x = prior[i];
+            j = i;
+        }
+    }
+    return j;
+}
+int main(){
+    int n,t,x;
+    printf("Enter the number of processes:");
+    scanf("%d",&n);
+    int pid[n],at[n],bt1[n],ct[n],tat[n],wt[n],bt2[n],rt[n],prior[n];
+    for(int i=0;i<n;i++){
+        printf("Enter arrival time, burst time and priority : ");
+        scanf("%d%d%d",&at[i],&bt1[i],&prior[i]);
+        pid[i]=i+1;
+    }
+    sort(pid,at,bt1,prior,n);
+    for(int i=0;i<n;i++){
+        bt2[i]=bt1[i];
+        rt[i] = -1;
+    }
+    int arvc = 0;
+    int count = 0;
+    int ctvar = at[0];
+    int curi = 0;
+    while (count != n){
+        if(rt[curi]==-1){
+            rt[curi] = ctvar - at[curi];
+        }
+        if(arvc == n){
+            ctvar += bt2[curi];
+            bt2[curi] = 0;
+        }
+        else{
+            ctvar += 1;
+            bt2[curi] -= 1;
+        }
+        for(int i = 0;at[i]<=ctvar;i++){
+            arvc +=1;
+            x = i;
+        }
+        if(bt2[curi] == 0){
+            count +=1;
+            ct[curi] = ctvar;
+            prior[curi] = -1;
+        }
+        curi = highest_priority(prior,0,x+1);
+    }
+    for(int i=0;i<n;i++){
+        tat[i]=ct[i]-at[i];
+        wt[i]=tat[i]-bt1[i];
+    }
+    float avg_tat=0;
+    float avg_wt=0;
+    for(int i=0;i<n;i++){
+        avg_tat+=tat[i];
+        avg_wt+=wt[i];
+    }
+    printf("pid\tat\tbt\tct\ttat\twt\trt\n\n");
+    for(int i=0;i<n;i++){
+        printf("%d\t%d\t%d\t%d\t%d\t%d\t%d\t",pid[i],at[i],bt1[i],ct[i],tat[i],wt[i],rt[i]);
+        printf("\n");
     }
 
-    prio_non_preemptive(proc, n);
-
-    
-    printf("PID\tAT\tBT\tPri\tCT\tWT\tTAT\tRT\n");
-    for (int i = 0; i < n; i++) {
-        printf("%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n",
-               proc[i].pid, proc[i].at, proc[i].bt, proc[i].pri,
-               proc[i].ct, proc[i].wt, proc[i].tat, proc[i].rt);
-    }
-
+    printf("\nAverage Turn around time : %f",avg_tat/n);
+    printf("\nAverage waiting time : %f",avg_wt/n);
     return 0;
+}
